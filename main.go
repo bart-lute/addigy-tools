@@ -1,7 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"github.com/bart-lute/addigy-tools/internal/cmd"
+	"github.com/bart-lute/addigy-tools/internal/config"
+	"log/slog"
+)
 
 func main() {
-	fmt.Println("Hello World")
+	slog.SetLogLoggerLevel(config.LogLevels[config.LogLevel])
+	cmd.Execute()
 }
