@@ -11,7 +11,7 @@ var (
 		Aliases: []string{
 			"ade",
 		},
-		Short: "Find broken ade synchronization",
+		Short: "Commands for automatic enrollment policies",
 	}
 
 	adeListCmd = &cobra.Command{

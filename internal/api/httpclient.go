@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -19,11 +20,14 @@ func doRequest(method string, endPoint string, requestBody any, responseBody any
 	apiKey := viper.GetString("api.key")
 
 	// Convert the Request Body to a Reader Object
-	rb, err := json.Marshal(requestBody)
-	if err != nil {
-		log.Fatal(err)
+	var requestBodyReader io.Reader
+	if requestBody != nil {
+		rb, err := json.Marshal(requestBody)
+		if err != nil {
+			log.Fatal(err)
+		}
+		requestBodyReader = strings.NewReader(string(rb))
 	}
-	requestBodyReader := strings.NewReader(string(rb))
 
 	request, err := http.NewRequest(method, fmt.Sprintf("%s/%s", baseUrl, endPoint), requestBodyReader)
 	if err != nil {
@@ -53,6 +57,7 @@ func doRequest(method string, endPoint string, requestBody any, responseBody any
 		log.Fatal(err)
 	}
 	if response.StatusCode != http.StatusOK {
+		slog.Debug(fmt.Sprintf("API error: %s", body))
 		log.Fatal(fmt.Sprintf("API error: %s", response.Status))
 	}
 

@@ -36,7 +36,12 @@ func init() {
 	adeListCmd.Flags().BoolP("broken-only", "", false, "Only list broken Automatic Device Enrollments")
 	adeCmd.AddCommand(adeListCmd)
 
+	// Policies Subcommands
+	policiesWerkplekProCmd.AddCommand(policiesWerkplekProClientsCmd)
+	policiesCmd.AddCommand(policiesWerkplekProCmd)
+
 	rootCmd.AddCommand(adeCmd)
+	rootCmd.AddCommand(policiesCmd)
 }
 
 func initConfig() {

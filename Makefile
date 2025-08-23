@@ -6,3 +6,8 @@ COMMON_LD_FLAGS := -s -w -X $(PKG)/internal/config.Version=$(TAG)
 # Build locally (for testing, etc)
 go-build:
 	go build -o $(PROJECT_NAME) -ldflags "$(COMMON_LD_FLAGS) -X $(PKG)/internal/config.LogLevel=debug"
+
+build-release:
+	rm -rf build; mkdir -p build
+	go build -o ./build/$(PROJECT_NAME) -ldflags "$(COMMON_LD_FLAGS) -X $(PKG)/internal/config.LogLevel=error"
+
