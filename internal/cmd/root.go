@@ -37,11 +37,10 @@ func init() {
 	adeCmd.AddCommand(adeListCmd)
 
 	// Policies Subcommands
-	policiesWerkplekProCmd.AddCommand(policiesWerkplekProClientsCmd)
-	policiesCmd.AddCommand(policiesWerkplekProCmd)
+	werkplekProCmd.AddCommand(werkplekProClientsCmd)
 
 	rootCmd.AddCommand(adeCmd)
-	rootCmd.AddCommand(policiesCmd)
+	rootCmd.AddCommand(werkplekProCmd)
 }
 
 func initConfig() {

@@ -13,36 +13,7 @@ import (
 	"strings"
 )
 
-//type Node struct {
-//	policy   *models.Policy
-//	children map[string]*Node
-//}
-
-func PoliciesList(cmd *cobra.Command, args []string) {
-	slog.Debug(fmt.Sprintf("Listing Policies"))
-	var policyQueryRequest *models.PolicyQueryRequest
-	var policies []models.Policy
-
-	api.PoliciesQuery(policyQueryRequest, &policies)
-
-	//nodes := make(map[string]*Node)
-	//for {
-	//	for _, policy := range policies {
-	//		if policy.Parent == "" {
-	//			nodes[policy.Name] = &Node{
-	//				policy: &policy,
-	//			}
-	//			slog.Debug("asdasd")
-	//		} else {
-	//
-	//		}
-	//	}
-	//
-	//}
-
-}
-
-func PoliciesWerkplekProClients(cmd *cobra.Command, args []string) {
+func WerkplekProClients(cmd *cobra.Command, args []string) {
 	slog.Debug(fmt.Sprintf("Listing WerkPlek Pro Clients"))
 	var policyQueryRequest *models.PolicyQueryRequest
 	var policies []models.Policy
