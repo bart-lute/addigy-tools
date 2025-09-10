@@ -67,6 +67,10 @@ func ADEList(cmd *cobra.Command, args []string) {
 
 	brokenOnly, err := cmd.Flags().GetBool("broken-only")
 	if err != nil {
+		log.Fatal(err)
+	}
+	csv, err := cmd.Flags().GetBool("csv")
+	if err != nil {
 		log.Fatalln(err)
 	}
 	slog.Debug(fmt.Sprintf("broken-only: %v", brokenOnly))
@@ -87,5 +91,5 @@ func ADEList(cmd *cobra.Command, args []string) {
 			})
 		}
 	}
-	renderTable(&tableHeader, &rows)
+	renderTable(&tableHeader, &rows, csv)
 }

@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	"github.com/bart-lute/addigy-tools/internal/api"
+	"github.com/bart-lute/addigy-tools/internal/models"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/viper"
 	"log"
@@ -14,13 +15,18 @@ import (
 
 var apiDateTimeFormat = "2006-01-02T15:04:05.999999999Z"
 
-func renderTable(header *table.Row, rows *[]table.Row) {
+func renderTable(header *table.Row, rows *[]table.Row, csv bool) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleLight)
 	t.AppendHeader(*header)
 	t.AppendRows(*rows)
-	t.Render()
+
+	if csv {
+		t.RenderCSV()
+	} else {
+		t.Render()
+	}
 }
 
 func getLocation() *time.Location {
@@ -39,8 +45,8 @@ func localDateTimeString(apiDate string) string {
 	return t.In(getLocation()).Format("2006-01-02 15:04:05")
 }
 
-func getPoliciesSecurityAndPrivacyMap(configurationsProfileResponse *api.ConfigurationsProfilesResponse) *map[string][]string {
-	payloadTypePrefix := "com.addigy.securityAndPrivacy"
+func getPoliciesProfileMap(configurationsProfileResponse *api.ConfigurationsProfilesResponse, payloadTypePrefix string) *map[string][]string {
+	//payloadTypePrefix := "com.addigy.securityAndPrivacy"
 	payloads := &configurationsProfileResponse.Payloads
 	policiesMdmPayloads := &configurationsProfileResponse.PoliciesMdmPayloads
 	groups := make(map[string]string)
@@ -65,4 +71,33 @@ func getPoliciesSecurityAndPrivacyMap(configurationsProfileResponse *api.Configu
 		}
 	}
 	return &m
+}
+
+func getPoliciesSecurityAndPrivacyMap(configurationsProfileResponse *api.ConfigurationsProfilesResponse) *map[string][]string {
+	return getPoliciesProfileMap(configurationsProfileResponse, "com.addigy.securityAndPrivacy")
+}
+
+func getPoliciesSoftwareUpdateMap(configurationsProfileResponse *api.ConfigurationsProfilesResponse) *map[string][]string {
+	return getPoliciesProfileMap(configurationsProfileResponse, "com.addigy.softwareupdate.com.apple.softwareupdate")
+}
+
+// Fetch all policies and create a Map, to easily retrieve data
+func getPoliciesMap() *map[string]models.Policy {
+	var policyQueryRequest models.PolicyQueryRequest
+	var policies []models.Policy
+	policiesMap := make(map[string]models.Policy)
+	api.PoliciesQuery(&policyQueryRequest, &policies)
+	for _, policy := range policies {
+		policiesMap[policy.PolicyID] = policy
+	}
+	return &policiesMap
+}
+
+// getKeyString returns a viper.GetString or a FATAL if not found
+func getKeyString(key string) string {
+	value := viper.GetString(key)
+	if value == "" {
+		log.Fatalf("Key %s not found in config", key)
+	}
+	return value
 }

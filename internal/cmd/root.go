@@ -27,20 +27,43 @@ func Execute() {
 	}
 }
 
+func addCsvFlag(cmd *cobra.Command) {
+	cmd.Flags().Bool("csv", false, "output as CSV")
+}
+
 func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("config file (default is %s/config.yaml)", defaultConfigPath))
 
 	// ADE Subcommands
-	adeListCmd.Flags().BoolP("broken-only", "", false, "Only list broken Automatic Device Enrollments")
+	adeListCmd.Flags().Bool("broken-only", false, "Only list broken Automatic Device Enrollments")
+	addCsvFlag(adeListCmd)
 	adeCmd.AddCommand(adeListCmd)
 
-	// Policies Subcommands
+	// Werkplek Pro Subcommands
+	addCsvFlag(werkplekProClientsCmd)
 	werkplekProCmd.AddCommand(werkplekProClientsCmd)
+
+	// Custom Facts Subcommands
+	addCsvFlag(customFactsListCmd)
+	customFactsCmd.AddCommand(customFactsListCmd)
+
+	// Facts Subcommands
+	addCsvFlag(factsListCmd)
+	factsCmd.AddCommand(factsListCmd)
+
+	// Devices Subcommands
+	addCsvFlag(devicesWithSlackCmd)
+	devicesCmd.AddCommand(devicesWithSlackCmd)
+	addCsvFlag(devicesSecureBootlevelCmd)
+	devicesCmd.AddCommand(devicesSecureBootlevelCmd)
 
 	rootCmd.AddCommand(adeCmd)
 	rootCmd.AddCommand(werkplekProCmd)
+	rootCmd.AddCommand(customFactsCmd)
+	rootCmd.AddCommand(factsCmd)
+	rootCmd.AddCommand(devicesCmd)
 }
 
 func initConfig() {

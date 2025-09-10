@@ -29,7 +29,9 @@ func doRequest(method string, endPoint string, requestBody any, responseBody any
 		requestBodyReader = strings.NewReader(string(rb))
 	}
 
-	request, err := http.NewRequest(method, fmt.Sprintf("%s/%s", baseUrl, endPoint), requestBodyReader)
+	url := fmt.Sprintf("%s/%s", baseUrl, endPoint)
+	slog.Debug(fmt.Sprintf("%s %s", method, url))
+	request, err := http.NewRequest(method, url, requestBodyReader)
 	if err != nil {
 		log.Fatal(err)
 	}

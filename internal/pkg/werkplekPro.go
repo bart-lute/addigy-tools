@@ -15,6 +15,12 @@ import (
 
 func WerkplekProClients(cmd *cobra.Command, args []string) {
 	slog.Debug(fmt.Sprintf("Listing WerkPlek Pro Clients"))
+
+	csv, err := cmd.Flags().GetBool("csv")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	var policyQueryRequest *models.PolicyQueryRequest
 	var policies []models.Policy
 	var clientPolicies []models.Policy
@@ -44,18 +50,21 @@ func WerkplekProClients(cmd *cobra.Command, args []string) {
 	api.ConfigurationsProfiles(&configurationsProfilesResponse)
 
 	policiesSecurityAndPrivacyMap := *getPoliciesSecurityAndPrivacyMap(&configurationsProfilesResponse)
+	policiesSoftwareUpdateMap := *getPoliciesSoftwareUpdateMap(&configurationsProfilesResponse)
 
 	tHeader := table.Row{
 		"Policy",
-		"Security and Privacy Policies",
+		"Security and Privacy Profiles",
+		"Software Update Policies",
 	}
 	var tRows []table.Row
 	for _, policy := range clientPolicies {
 		tRows = append(tRows, table.Row{
 			policy.Name,
 			fmt.Sprintf("%s", strings.Join(policiesSecurityAndPrivacyMap[policy.PolicyID], ", ")),
+			fmt.Sprintf("%s", strings.Join(policiesSoftwareUpdateMap[policy.PolicyID], ", ")),
 		})
 	}
-	renderTable(&tHeader, &tRows)
+	renderTable(&tHeader, &tRows, csv)
 
 }
