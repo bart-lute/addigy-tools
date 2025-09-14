@@ -15,6 +15,15 @@ import (
 
 var apiDateTimeFormat = "2006-01-02T15:04:05.999999999Z"
 
+func getClientPolicyId() *string {
+	// Sanity Check
+	clientPoliciesId := viper.GetString("policies.werkplekPro.clients.id")
+	if clientPoliciesId == "" {
+		log.Fatal("Config does not contain key: policies.werkplekPro.clients.id")
+	}
+	return &clientPoliciesId
+}
+
 func renderTable(header *table.Row, rows *[]table.Row, csv bool) {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)

@@ -7,7 +7,6 @@ import (
 	"github.com/bart-lute/addigy-tools/internal/models/device_entities"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"log"
 	"log/slog"
 	"slices"
@@ -15,6 +14,32 @@ import (
 	"strings"
 )
 
+func getWerkplekProDevices(policies *[]models.Policy, desiredFactIdentifiers *[]string, queryFilter *device_entities.QueryFilter, sortDirection string, sortField string) *[]device_entities.DeviceAudit {
+
+	// Check if desiredFactIdentifiers contains "policy_id". If not add it. We depend on it
+	if !slices.Contains(*desiredFactIdentifiers, "policy_id") {
+		*desiredFactIdentifiers = append(*desiredFactIdentifiers, "policy_id")
+	}
+
+	// A slice of strings containing all Client sub Policy IDs
+	policyIds := getChildPolicies(policies, getClientPolicyId())
+
+	var items []device_entities.DeviceAudit
+	var werkplekProItems []device_entities.DeviceAudit
+	api.Devices(desiredFactIdentifiers, queryFilter, sortDirection, sortField, &items)
+	for _, item := range items {
+		if slices.Contains(*policyIds, fmt.Sprintf("%s", item.Facts["policy_id"].Value)) {
+			werkplekProItems = append(werkplekProItems, item)
+		}
+	}
+
+	return &werkplekProItems
+
+}
+
+// WerkplekProClients
+// This is a somewhat simple filter. It assumes that Werkplek Pro Clients
+// (and ONLY Clients) are located directly underneath the Werkplek Pro / Clients policy
 func WerkplekProClients(cmd *cobra.Command, args []string) {
 	slog.Debug(fmt.Sprintf("Listing WerkPlek Pro Clients"))
 
@@ -27,17 +52,11 @@ func WerkplekProClients(cmd *cobra.Command, args []string) {
 	var policies []models.Policy
 	var clientPolicies []models.Policy
 
-	// Sanity Check
-	clientPoliciesId := viper.GetString("policies.werkplekPro.clients.id")
-	if clientPoliciesId == "" {
-		log.Fatal("Config does not contain key: policies.werkplekPro.clients.id")
-	}
-
 	api.PoliciesQuery(policyQueryRequest, &policies)
 
 	// Populate the Clients Slice
 	for _, policy := range policies {
-		if policy.Parent == clientPoliciesId {
+		if policy.Parent == *getClientPolicyId() {
 			clientPolicies = append(clientPolicies, policy)
 		}
 	}
@@ -74,12 +93,6 @@ func WerkplekProClients(cmd *cobra.Command, args []string) {
 func WerkplekProDevicesLocalAdmin(cmd *cobra.Command, args []string) {
 	slog.Debug(fmt.Sprintf("Listing Local Admin status for all devices"))
 
-	// Sanity Check
-	clientPoliciesId := viper.GetString("policies.werkplekPro.clients.id")
-	if clientPoliciesId == "" {
-		log.Fatal("Config does not contain key: policies.werkplekPro.clients.id")
-	}
-
 	csv, err := cmd.Flags().GetBool("csv")
 	if err != nil {
 		log.Fatalln(err)
@@ -100,17 +113,17 @@ func WerkplekProDevicesLocalAdmin(cmd *cobra.Command, args []string) {
 		secureTokenEnabledForLocalAdminId,
 	}
 
-	var queryFilter device_entities.QueryFilter
-
-	var items []device_entities.DeviceAudit
-	api.Devices(&desiredFactIdentifiers, &queryFilter, "asc", "device_name", &items)
-
+	// Get all Policies
 	var policyQueryRequest models.PolicyQueryRequest
 	var policies []models.Policy
 	api.PoliciesQuery(&policyQueryRequest, &policies)
-	policyIds := getChildPolicies(&policies, &clientPoliciesId)
 
+	// Create a map, which we can use to retrieve Metadata
 	policiesMap := *getPoliciesMapFromPolicies(&policies)
+
+	// We are going to filter the devices to show only Werkplek Pro (Client) devices
+	var queryFilter device_entities.QueryFilter
+	items := getWerkplekProDevices(&policies, &desiredFactIdentifiers, &queryFilter, "asc", "device_name")
 
 	tHead := table.Row{
 		"DEVICE NAME",
@@ -124,25 +137,22 @@ func WerkplekProDevicesLocalAdmin(cmd *cobra.Command, args []string) {
 	}
 
 	var tRows []table.Row
-	for _, item := range items {
-		if slices.Contains(*policyIds, fmt.Sprintf("%s", item.Facts["policy_id"].Value)) {
-			tRow := table.Row{}
-			for _, i := range desiredFactIdentifiers {
-				value := item.Facts[i].Value
-				if value == nil {
-					value = "n/a"
-				}
-				if i == "last_online" {
-					//value = item.Facts[i].Value
-					value = localDateTimeString(fmt.Sprintf("%s", item.Facts[i].Value))
-				} else if i == "policy_id" {
-					value = policiesMap[fmt.Sprint(item.Facts[i].Value)].Name
-				}
-				tRow = append(tRow, value)
+	for _, item := range *items {
+		tRow := table.Row{}
+		for _, i := range desiredFactIdentifiers {
+			value := item.Facts[i].Value
+			if value == nil {
+				value = "n/a"
 			}
-			tRows = append(tRows, tRow)
-
+			if i == "last_online" {
+				//value = item.Facts[i].Value
+				value = localDateTimeString(fmt.Sprintf("%s", item.Facts[i].Value))
+			} else if i == "policy_id" {
+				value = policiesMap[fmt.Sprint(item.Facts[i].Value)].Name
+			}
+			tRow = append(tRow, value)
 		}
+		tRows = append(tRows, tRow)
 	}
 	renderTable(&tHead, &tRows, csv)
 
@@ -151,12 +161,6 @@ func WerkplekProDevicesLocalAdmin(cmd *cobra.Command, args []string) {
 // WerkplekProDevicesSecureBootLevel A list of devices with data related to Secure Boot Level
 func WerkplekProDevicesSecureBootLevel(cmd *cobra.Command, args []string) {
 	slog.Debug(fmt.Sprintf("Listing Secure Bootlevel status for all devices "))
-
-	// Sanity Check
-	clientPoliciesId := viper.GetString("policies.werkplekPro.clients.id")
-	if clientPoliciesId == "" {
-		log.Fatal("Config does not contain key: policies.werkplekPro.clients.id")
-	}
 
 	csv, err := cmd.Flags().GetBool("csv")
 	if err != nil {
@@ -174,17 +178,17 @@ func WerkplekProDevicesSecureBootLevel(cmd *cobra.Command, args []string) {
 		"enrolled_via_dep",
 	}
 
-	var queryFilter device_entities.QueryFilter
-
-	var items []device_entities.DeviceAudit
-	api.Devices(&desiredFactIdentifiers, &queryFilter, "asc", "device_name", &items)
-
+	// Get all Policies
 	var policyQueryRequest models.PolicyQueryRequest
 	var policies []models.Policy
 	api.PoliciesQuery(&policyQueryRequest, &policies)
-	policyIds := getChildPolicies(&policies, &clientPoliciesId)
 
+	// Create a map, useful for later
 	policiesMap := *getPoliciesMapFromPolicies(&policies)
+
+	// We are going to filter the devices to show only Werkplek Pro (Client) devices
+	var queryFilter device_entities.QueryFilter
+	items := getWerkplekProDevices(&policies, &desiredFactIdentifiers, &queryFilter, "asc", "device_name")
 
 	tHead := table.Row{
 		"DEVICE NAME",
@@ -198,25 +202,85 @@ func WerkplekProDevicesSecureBootLevel(cmd *cobra.Command, args []string) {
 	}
 
 	var tRows []table.Row
-	for _, item := range items {
-		if slices.Contains(*policyIds, fmt.Sprintf("%s", item.Facts["policy_id"].Value)) {
-			tRow := table.Row{}
-			for _, i := range desiredFactIdentifiers {
-				value := item.Facts[i].Value
-				if value == nil {
-					value = "n/a"
-				}
-				if i == "last_online" {
-					//value = item.Facts[i].Value
-					value = localDateTimeString(fmt.Sprintf("%s", item.Facts[i].Value))
-				} else if i == "policy_id" {
-					value = policiesMap[fmt.Sprint(item.Facts[i].Value)].Name
-				}
-				tRow = append(tRow, value)
+	for _, item := range *items {
+		tRow := table.Row{}
+		for _, i := range desiredFactIdentifiers {
+			value := item.Facts[i].Value
+			if value == nil {
+				value = "n/a"
 			}
-			tRows = append(tRows, tRow)
+			if i == "last_online" {
+				//value = item.Facts[i].Value
+				value = localDateTimeString(fmt.Sprintf("%s", item.Facts[i].Value))
+			} else if i == "policy_id" {
+				value = policiesMap[fmt.Sprint(item.Facts[i].Value)].Name
+			}
+			tRow = append(tRow, value)
 		}
+		tRows = append(tRows, tRow)
 	}
 	renderTable(&tHead, &tRows, csv)
+}
 
+func WerkplekProDevicesWithSlack(cmd *cobra.Command, args []string) {
+	slog.Debug(fmt.Sprintf("Devices With Slack Installed"))
+
+	// Custom Facts use the ID as Identifier
+	slackVersionId := getKeyString("customFacts.ids.slackVersion")
+	hasSlackInstalledId := getKeyString("customFacts.ids.hasSlackInstalled")
+
+	csv, err := cmd.Flags().GetBool("csv")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	desiredFactIdentifiers := []string{
+		"device_name",
+		"online",
+		"policy_id",
+		slackVersionId,
+	}
+
+	// Get all Policies
+	var policyQueryRequest models.PolicyQueryRequest
+	var policies []models.Policy
+	api.PoliciesQuery(&policyQueryRequest, &policies)
+
+	// Create a map, useful for later
+	policiesMap := *getPoliciesMapFromPolicies(&policies)
+
+	var auditFilters []device_entities.AuditFilter
+
+	auditFilters = append(auditFilters, device_entities.AuditFilter{
+		AuditField: hasSlackInstalledId,
+		Operation:  "=",
+		Type:       "boolean",
+		Value:      true,
+	})
+
+	queryFilter := device_entities.QueryFilter{
+		Filters: &auditFilters,
+	}
+
+	items := getWerkplekProDevices(&policies, &desiredFactIdentifiers, &queryFilter, "asc", "device_name")
+
+	tHead := table.Row{
+		"DEVICE NAME",
+		"ONLINE",
+		"POLICY",
+		"SLACK VERSION",
+	}
+	var tRows []table.Row
+	for _, item := range *items {
+		tRow := table.Row{}
+		for _, i := range desiredFactIdentifiers {
+			if i == "policy_id" {
+				tRow = append(tRow, policiesMap[fmt.Sprint(item.Facts[i].Value)].Name)
+			} else {
+				tRow = append(tRow, item.Facts[i].Value)
+			}
+		}
+		tRows = append(tRows, tRow)
+	}
+	renderTable(&tHead, &tRows, csv)
 }
