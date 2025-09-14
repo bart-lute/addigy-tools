@@ -49,7 +49,7 @@ func DevicesWithSlack(cmd *cobra.Command, args []string) {
 	tHead := table.Row{
 		"DEVICE NAME",
 		"ONLINE",
-		"POLICY ID",
+		"POLICY",
 		//"LAST ONLINE",
 		"SLACK VERSION",
 	}
@@ -66,63 +66,4 @@ func DevicesWithSlack(cmd *cobra.Command, args []string) {
 		tRows = append(tRows, tRow)
 	}
 	renderTable(&tHead, &tRows, csv)
-}
-
-// DevicesSecureBootLevel A list of devices with data related to Secure Boot Level
-func DevicesSecureBootLevel(cmd *cobra.Command, args []string) {
-	slog.Debug(fmt.Sprintf("Listing WerkPlek Pro Devices"))
-
-	csv, err := cmd.Flags().GetBool("csv")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	desiredFactIdentifiers := []string{
-		"device_name",
-		"online",
-		"policy_id",
-		"last_online",
-		"secure_boot_level",
-		"mac_os_x_version",
-		"device_model_name",
-		"enrolled_via_dep",
-	}
-
-	var queryFilter device_entities.QueryFilter
-
-	var items []device_entities.DeviceAudit
-	api.Devices(&desiredFactIdentifiers, &queryFilter, "asc", "device_name", &items)
-	policiesMap := *getPoliciesMap()
-
-	tHead := table.Row{
-		"DEVICE NAME",
-		"ONLINE",
-		"POLICY ID",
-		"LAST ONLINE",
-		"SECURE_BOOT_LEVEL",
-		"MACOS_VERSION",
-		"DEVICE_MODEL_NAME",
-		"ENROLLED_VIA_ADE",
-	}
-
-	var tRows []table.Row
-	for _, item := range items {
-		tRow := table.Row{}
-		for _, i := range desiredFactIdentifiers {
-			value := item.Facts[i].Value
-			if value == nil {
-				value = "n/a"
-			}
-			if i == "last_online" {
-				//value = item.Facts[i].Value
-				value = localDateTimeString(fmt.Sprintf("%s", item.Facts[i].Value))
-			} else if i == "policy_id" {
-				value = policiesMap[fmt.Sprint(item.Facts[i].Value)].Name
-			}
-			tRow = append(tRow, value)
-		}
-		tRows = append(tRows, tRow)
-	}
-	renderTable(&tHead, &tRows, csv)
-
 }

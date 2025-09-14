@@ -85,9 +85,15 @@ func getPoliciesSoftwareUpdateMap(configurationsProfileResponse *api.Configurati
 func getPoliciesMap() *map[string]models.Policy {
 	var policyQueryRequest models.PolicyQueryRequest
 	var policies []models.Policy
-	policiesMap := make(map[string]models.Policy)
 	api.PoliciesQuery(&policyQueryRequest, &policies)
-	for _, policy := range policies {
+
+	return getPoliciesMapFromPolicies(&policies)
+}
+
+// Fetch all policies and create a Map, to easily retrieve data
+func getPoliciesMapFromPolicies(policies *[]models.Policy) *map[string]models.Policy {
+	policiesMap := make(map[string]models.Policy)
+	for _, policy := range *policies {
 		policiesMap[policy.PolicyID] = policy
 	}
 	return &policiesMap
@@ -100,4 +106,19 @@ func getKeyString(key string) string {
 		log.Fatalf("Key %s not found in config", key)
 	}
 	return value
+}
+
+// getChildPolicies Get a list of all Child Policies, recursively
+func getChildPolicies(policies *[]models.Policy, policyId *string) *[]string {
+
+	var policyIds []string
+
+	for _, policy := range *policies {
+		if policy.Parent == *policyId {
+			policyIds = append(policyIds, policy.PolicyID)
+			policyIds = append(policyIds, *getChildPolicies(policies, &policy.PolicyID)...)
+		}
+	}
+
+	return &policyIds
 }
