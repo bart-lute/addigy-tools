@@ -46,11 +46,16 @@ func init() {
 	addCsvFlag(werkplekProDevicesLocalAdminCmd)
 	addCsvFlag(werkplekProDevicesSecureBootlevelCmd)
 	addCsvFlag(werkplekProDevicesWithSlackCmd)
+	addCsvFlag(werkplekProDevicesWithDropboxCmd)
+	//werkplekProDevicesOnlineCmd.Flags().Bool("filtered", false, "Filter Online devices (see config)")
+	werkplekProDevicesOnlineCmd.Flags().StringSlice("serials", []string{}, "A comma separated list of serial numbers")
 
 	werkplekProCmd.AddCommand(werkplekProClientsCmd)
 	werkplekProCmd.AddCommand(werkplekProDevicesLocalAdminCmd)
 	werkplekProCmd.AddCommand(werkplekProDevicesSecureBootlevelCmd)
 	werkplekProCmd.AddCommand(werkplekProDevicesWithSlackCmd)
+	werkplekProCmd.AddCommand(werkplekProDevicesWithDropboxCmd)
+	werkplekProCmd.AddCommand(werkplekProDevicesOnlineCmd)
 
 	// Custom Facts Subcommands
 	addCsvFlag(customFactsListCmd)

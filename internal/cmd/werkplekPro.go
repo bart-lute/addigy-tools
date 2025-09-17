@@ -19,9 +19,9 @@ var (
 		Run:   pkg.WerkplekProClients,
 	}
 
-	// A Command to List Custom Facts
+	// A Command to List Devices With Slack Installed
 	werkplekProDevicesWithSlackCmd = &cobra.Command{
-		Use:   "with-slack",
+		Use:   "slack",
 		Short: "List of Devices with Slack installed",
 		Run:   pkg.WerkplekProDevicesWithSlack,
 	}
@@ -42,5 +42,19 @@ var (
 		},
 		Short: "Secure Boot Level information for Werkplek Pro Devices",
 		Run:   pkg.WerkplekProDevicesSecureBootLevel,
+	}
+
+	// A Command to List Devices With Slack Installed
+	werkplekProDevicesWithDropboxCmd = &cobra.Command{
+		Use:   "dropbox",
+		Short: "List of Devices with Dropbox installed",
+		Run:   pkg.WerkplekProDevicesWithDropbox,
+	}
+
+	// List Online Devices from a Slice of Device IDS
+	werkplekProDevicesOnlineCmd = &cobra.Command{
+		Use:   "online",
+		Short: "A list of Online Werkplek Pro Devices",
+		Run:   pkg.WerkplekProDevicesOnline,
 	}
 )
